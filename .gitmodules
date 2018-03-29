@@ -1,0 +1,3 @@
+[submodule "lib/libjwdpmi"]
+	path = lib/libjwdpmi
+	url = https://github.com/jwt27/libjwdpmi.git

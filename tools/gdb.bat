@@ -1,0 +1,4 @@
+SET MSYSTEM=MINGW64
+SET CHERE_INVOKING=1
+MODE COM1: BAUD=115200 DATA=8 PARITY=N STOP=1
+%MSYS2_ROOT%\usr\bin\bash --login -c "%MSYS2_DJGPP%/bin/i586-pc-msdosdjgpp-gdb %*"

@@ -1,0 +1,44 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "appliesTo": "makefile",
+      "type": "launch",
+      "taskName": "makefile-build",
+      "contextType": "build",
+      "workingDirectory": "${workspaceRoot}",
+      "command": "${workspaceRoot}/make_vs.bat",
+      "args": [
+        "${workspaceRoot}",
+        "all"
+      ],
+      "output": "bin/hexmidi.exe"
+    },
+    {
+      "appliesTo": "makefile",
+      "type": "launch",
+      "taskName": "makefile-rebuild",
+      "contextType": "rebuild",
+      "workingDirectory": "${workspaceRoot}",
+      "command": "${workspaceRoot}/make_vs.bat",
+      "args": [
+        "${workspaceRoot}",
+        "-B",
+        "all"
+      ],
+      "output": "bin/dpmitest.exe"
+    },
+    {
+      "appliesTo": "makefile",
+      "type": "launch",
+      "taskName": "makefile-clean",
+      "contextType": "clean",
+      "workingDirectory": "${workspaceRoot}",
+      "command": "${workspaceRoot}/make_vs.bat",
+      "args": [
+        "${workspaceRoot}",
+        "clean"
+      ]
+    }
+  ]
+}

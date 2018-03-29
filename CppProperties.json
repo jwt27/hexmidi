@@ -1,0 +1,21 @@
+{
+  "projectName": "hexmidi",
+  "configurations": [
+    {
+      "name": "x86-djgpp",
+      "includePath": [
+        "${workspaceRoot}/lib/libjwdpmi/include",
+        "${env.MSYS2_ROOT}/${env.MSYS2_DJGPP}/lib/gcc/i586-pc-msdosdjgpp/7.3.0/include/c++",
+        "${env.MSYS2_ROOT}/${env.MSYS2_DJGPP}/lib/gcc/i586-pc-msdosdjgpp/7.3.0/include/c++/i586-pc-msdosdjgpp",
+        "${env.MSYS2_ROOT}/${env.MSYS2_DJGPP}/lib/gcc/i586-pc-msdosdjgpp/7.3.0/include/c++/backward",
+        "${env.MSYS2_ROOT}/${env.MSYS2_DJGPP}/lib/gcc/i586-pc-msdosdjgpp/7.3.0/include",
+        "${env.MSYS2_ROOT}/${env.MSYS2_DJGPP}/lib/gcc/i586-pc-msdosdjgpp/7.3.0/include-fixed",
+        "${env.MSYS2_ROOT}/${env.MSYS2_DJGPP}/lib/gcc/i586-pc-msdosdjgpp/7.3.0/../../../../i586-pc-msdosdjgpp/sys-include",
+        "${env.MSYS2_ROOT}/${env.MSYS2_DJGPP}/lib/gcc/i586-pc-msdosdjgpp/7.3.0/../../../../i586-pc-msdosdjgpp/include"
+      ],
+      "intelliSenseMode": "linux-gcc-x86",
+      "forcedInclude": [ "${workspaceRoot}/tools/intellisense.h" ],
+      "compilerSwitches": "-std=c++14"
+    }
+  ]
+}

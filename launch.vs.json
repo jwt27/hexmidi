@@ -1,0 +1,35 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "cppdbg",
+      "name": "Debug (local VM)",
+      "project": "makefile",
+      "cwd": "${workspaceRoot}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "${workspaceRoot}/tools/gdb.bat",
+      "program": "${workspaceRoot}/bin/hexmidi-debug.exe",
+      "customLaunchSetupCommands": [
+        { "text": "set auto-load local-gdbinit" }
+      ],
+      "request": "attach",
+      "miDebuggerServerAddress": ":3333"
+    },
+    {
+      "type": "cppdbg",
+      "name": "Debug (serial COM1)",
+      "project": "makefile",
+      "cwd": "${workspaceRoot}/tools/",
+      "MIMode": "gdb",
+      "miDebuggerPath": "${workspaceRoot}/tools/gdb.bat",
+      "program": "${workspaceRoot}/bin/hexmidi-debug.exe",
+      "customLaunchSetupCommands": [
+        { "text": "set auto-load local-gdbinit" },
+        { "text": "set serial baud 115200" }
+      ],
+      "request": "attach",
+      "miDebuggerServerAddress" : "COM1"
+    }
+  ]
+}
