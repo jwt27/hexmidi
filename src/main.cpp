@@ -1,3 +1,6 @@
+/* * * * * * * * * * * * * *  hexmidi  * * * * * * * * * * * * * */
+/* Copyright (C) 2018 J.W. Jagersma, see COPYING.txt for details */
+
 #include <iostream>
 #include <deque>
 #include <string_view>
