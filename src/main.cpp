@@ -62,37 +62,81 @@ namespace jw
         { key::slash,       {   9, 0 } }
     };
 
+    struct midi_note
+    {
+        byte value;
+
+        friend std::ostream& operator<<(std::ostream& out, midi_note n)
+        {
+            constexpr std::array<const char*, 12> names { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+            return out << names[n.value % 12] << n.value / 12;
+        }
+
+        constexpr operator byte() const noexcept { return value; }
+    };
+
+    byte base = 45;
+    vector2i step { 2, 3 };
+
+    void print_grid()
+    {
+        std::cout << "Z=" << std::dec << midi_note { base } << ", step=" << step << std::endl;
+    }
+
     void hexmidi()
     {
         bool running { true };
+
         mpu401_stream mpu { mpu401_config { } };
-        byte base_note = 45;
-        vector2i step { 2, 3 };
+        keyboard keyb { std::make_shared<ps2_interface>() };
 
         callback key_event { [&] (key_state_pair k)
         {
-            if (k.second == key_state::repeat) return;
-            switch (k.first)
+            auto ctrl = keyb[key::any_ctrl];
+            if (k.second != key_state::repeat)
             {
-            default:
-                try
+                switch (k.first)
                 {
-                    auto g = key_grid.at(k.first);
-                    byte event = k.second == key_state::down ? 0x90 : 0x80;
-                    byte note = base_note + step.x * g.x + step.y * g.y;
-                    byte vel = 100;
-                    mpu << event << note << vel << std::flush;
-                }
-                catch (const std::out_of_range&) { }
-                break;
+                default:
+                    try
+                    {
+                        auto g = key_grid.at(k.first);
+                        byte event = k.second == key_state::down ? 0x90 : 0x80;
+                        byte note = base + step.x * g.x + step.y * g.y;
+                        byte vel = 100;
+                        mpu << event << note << vel << std::flush;
+                    }
+                    catch (const std::out_of_range&) { }
+                    break;
 
-            case key::esc:
-                running = false;
-                break;
+                case key::shift_left:
+                case key::shift_right:
+                {
+                    byte event = 0xb0;
+                    byte cc = 64;
+                    byte value = k.second == key_state::down ? 0x7f : 0x00;
+                    mpu << event << cc << value << std::flush;
+                    break;
+                }
+                }
+            }
+            if (not k.second.is_up())
+            {
+                switch (k.first)
+                {
+                case key::esc: running = false; break;
+
+                case key::down:     if (ctrl) --step.y; else base -= step.y; print_grid(); break;
+                case key::up:       if (ctrl) ++step.y; else base += step.y; print_grid(); break;
+                case key::left:     if (ctrl) --step.x; else base -= step.x; print_grid(); break;
+                case key::right:    if (ctrl) ++step.x; else base += step.x; print_grid(); break;
+
+                case key::num_add:  if (ctrl) ++base; else base += 12; print_grid(); break;
+                case key::num_sub:  if (ctrl) --base; else base -= 12; print_grid(); break;
+                }
             }
         } };
 
-        keyboard keyb { std::make_shared<ps2_interface>() };
         keyb.key_changed += key_event;
         keyb.auto_update(true);
 
