@@ -25,4 +25,7 @@ ctrl + arrow keys: adjust interval between keys
        numpad +/-: shift grid one octave up/down
 ctrl + numpad +/-: shift grid one semitone up/down
             space: sustain
+           f1-f12: disable/enable notes to form a scale
+       alt + note: same as f1-f12
+         numpad *: enable all notes
 ```

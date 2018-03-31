@@ -65,6 +65,8 @@ namespace jw
         { key::slash,       {   9, 0 } }
     };
 
+    std::array<bool, 12> scale;
+
     struct midi_note
     {
         byte value;
@@ -78,7 +80,8 @@ namespace jw
         constexpr operator byte() const noexcept { return value; }
     };
 
-    byte base = 45;
+    bool running { true };
+    byte base { 45 };
     vector2i step { 2, 3 };
 
     void print_grid()
@@ -86,9 +89,18 @@ namespace jw
         std::cout << "Z=" << std::dec << midi_note { base } << ", step=" << step << std::endl;
     }
 
+    void print_scale()
+    {
+        constexpr std::array<const char*, 12> names { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+        std::cout << "Scale: "
+        for (int i = 0; i < 12; ++i)
+            if (scale[i]) std::cout << names[i] << ' ';
+        std::cout << std::endl;
+    }
+
     void hexmidi()
     {
-        bool running { true };
+        scale.fill(true);
 
         mpu401_stream mpu { mpu401_config { } };
         keyboard keyb { std::make_shared<ps2_interface>() };
@@ -96,6 +108,7 @@ namespace jw
         callback key_event { [&] (key_state_pair k)
         {
             auto ctrl = keyb[key::any_ctrl];
+            auto alt = keyb[key::any_alt];
             if (k.second != key_state::repeat)
             {
                 switch (k.first)
@@ -106,8 +119,14 @@ namespace jw
                         auto g = key_grid.at(k.first);
                         byte event = k.second == key_state::down ? 0x90 : 0x80;
                         byte note = base + step.x * g.x + step.y * g.y;
+                        if (alt and k.second.is_down())
+                        {
+                            auto& s = scale[note % 12];
+                            s = not s;
+                            print_scale();
+                        }
                         byte vel = 100;
-                        mpu << event << note << vel << std::flush;
+                        if (scale[note % 12] or k.second.is_up()) mpu << event << note << vel << std::flush;
                     }
                     catch (const std::out_of_range&) { }
                     break;
@@ -135,6 +154,33 @@ namespace jw
 
                 case key::num_add:  if (ctrl) ++base; else base += 12; print_grid(); break;
                 case key::num_sub:  if (ctrl) --base; else base -= 12; print_grid(); break;
+
+                case key::num_mul:
+                    scale.fill([] { for (auto&& i : scale) { if (not i) return true; } return false; });
+                    print_scale();
+                    break;
+                }
+
+                static std::unordered_map<key, byte> scale_keys
+                {
+                    { key::f1,   0 },
+                    { key::f2,   1 },
+                    { key::f3,   2 },
+                    { key::f4,   3 },
+                    { key::f5,   4 },
+                    { key::f6,   5 },
+                    { key::f7,   6 },
+                    { key::f8,   7 },
+                    { key::f9,   8 },
+                    { key::f10,  9 },
+                    { key::f11, 10 },
+                    { key::f12, 11 }
+                };
+                if (scale_keys.count(k.first))
+                {
+                    auto& s = scale[scale_keys[k.first]];
+                    s = not s;
+                    print_scale();
                 }
             }
         } };
