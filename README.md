@@ -24,5 +24,5 @@ Control keys:
 ctrl + arrow keys: adjust interval between keys
        numpad +/-: shift grid one octave up/down
 ctrl + numpad +/-: shift grid one semitone up/down
-            shift: sustain
+            space: sustain
 ```

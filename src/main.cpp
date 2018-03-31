@@ -112,8 +112,7 @@ namespace jw
                     catch (const std::out_of_range&) { }
                     break;
 
-                case key::shift_left:
-                case key::shift_right:
+                case key::space:
                 {
                     byte event = 0xb0;
                     byte cc = 64;
