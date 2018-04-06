@@ -1,6 +1,13 @@
 # hexmidi
 Use your PC keyboard as a hexagonal isomorphic MIDI keyboard.
 
+### System requirements
+- FreeDOS / MS-DOS or compatible
+- Pentium processor
+- ~4MB memory
+- MPU-401 compatible MIDI card
+- optional: joystick
+
 ### Keys
 
 Default key layout on startup:
