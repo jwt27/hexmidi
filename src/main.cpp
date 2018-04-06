@@ -12,10 +12,14 @@
 #include <jw/io/ps2_interface.h>
 #include <jw/io/mpu401.h>
 #include <jw/io/gameport.h>
+#include <jw/split_stdint.h>
 
 namespace jw
 {
     using namespace io;
+    using split_int14_t = split_int<signed, 14>;
+    using split_uint14_t = split_int<unsigned, 14>;
+
     std::unordered_map<key, vector2i> key_grid
     {
         { key::backtick,    {  -1, 3 } },
@@ -103,8 +107,13 @@ namespace jw
     void enable_joystick(std::optional<gameport<>>& joy)
     {
         gameport<>::config gameport_cfg { };
+        gameport_cfg.strategy = gameport<>::poll_strategy::busy_loop;
         gameport_cfg.enable.x1 = false;
         gameport_cfg.enable.y1 = false;
+        gameport_cfg.output_range.min.x = -8192;
+        gameport_cfg.output_range.min.x = 8191;
+        gameport_cfg.output_range.min.y = 0;
+        gameport_cfg.output_range.min.y = 127;
 
         std::cout << "calibrate joystick, press fire when done.\n";
         {
@@ -130,11 +139,18 @@ namespace jw
 
     void hexmidi()
     {
+        std::cout << "Initializing... " << std::flush;
         scale.fill(true);
+
+        using namespace std::chrono_literals;
+        chrono::setup::setup_pit(true, 0x1000);
+        chrono::setup::setup_tsc(10000);
+
+        thread::yield_for(2s);
 
         mpu401_stream mpu { mpu401_config { } };
         keyboard keyb { std::make_shared<ps2_interface>() };
-        std::optional<gameport<>> joy;
+        std::optional<gameport<>> joy { };
 
         callback key_event { [&] (key_state_pair k)
         {
@@ -157,7 +173,7 @@ namespace jw
                             s = not s;
                             print_scale();
                         }
-                        byte vel = 100;
+                        byte vel = joy ? joy->get().y : 100;
                         if (scale[note % 12] or k.second.is_up()) mpu << event << note << vel << std::flush;
                     }
                     catch (const std::out_of_range&) { }
@@ -232,10 +248,42 @@ namespace jw
 
         keyb.key_changed += key_event;
         keyb.auto_update(true);
+        vector4f joy_value { }, last_joy_value;
+        std::cout << "ready.\n" << std::endl;
 
         while (running)
         {
-            thread::yield_for(std::chrono::milliseconds { 1 });
+            if (joy)
+            {
+                last_joy_value = joy_value;
+                joy_value = joy->get();
+                if (joy->cfg.enable.x0 and joy_value.x != last_joy_value.x)
+                {
+                    byte event = 0xb0;
+                    split_uint14_t value = joy_value.x;
+                    byte cc = 1;    // modulation
+                    byte v = value.hi;
+                    mpu << event << cc << v;
+                    cc = 1 + 32;
+                    v = value.lo;
+                    mpu << event << cc << v << std::flush;
+                }
+                if (joy->cfg.enable.y0 and joy_value.y != last_joy_value.y)
+                {
+                    byte event = 0xd0;  // aftertouch
+                    byte value = joy_value.y;
+                    mpu << event << value << std::flush;
+                }
+                if (joy->cfg.enable.x1 and joy_value.z != last_joy_value.z)
+                {
+
+                }
+                if (joy->cfg.enable.y1 and joy_value.w != last_joy_value.w)
+                {
+
+                }
+            }
+            thread::yield_for(std::chrono::milliseconds { 2 });
         }
     }
 }
