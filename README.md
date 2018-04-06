@@ -28,4 +28,11 @@ ctrl + numpad +/-: shift grid one semitone up/down
            f1-f12: disable/enable notes to form a scale
        alt + note: same as f1-f12
          numpad *: enable all notes
+	 ctrl + j: enable joystick
+```
+
+Joystick:
+```
+    x axis: modulation
+    y axis: velocity + aftertouch
 ```
