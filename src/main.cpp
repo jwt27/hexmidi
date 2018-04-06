@@ -6,6 +6,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <optional>
+#include <bitset>
 #include <jw/io/key.h>
 #include <jw/vector.h>
 #include <jw/io/keyboard.h>
@@ -71,7 +72,7 @@ namespace jw
         { key::slash,       {   9, 0 } }
     };
 
-    std::array<bool, 12> scale;
+    std::bitset<12> scale { 0b11111111111 };
 
     struct midi_note
     {
@@ -102,6 +103,12 @@ namespace jw
         for (int i = 0; i < 12; ++i)
             if (scale[i]) std::cout << names[i] << ' ';
         std::cout << std::endl;
+    }
+
+    void toggle_scale(std::uint32_t key)
+    {
+        scale[key].flip();
+        print_scale();
     }
 
     void enable_joystick(std::optional<gameport<>>& joy)
@@ -140,7 +147,6 @@ namespace jw
     void hexmidi()
     {
         std::cout << "Initializing... " << std::flush;
-        scale.fill(true);
 
         using namespace std::chrono_literals;
         chrono::setup::setup_pit(true, 0x1000);
@@ -168,11 +174,7 @@ namespace jw
                         byte event = k.second == key_state::down ? 0x90 : 0x80;
                         byte note = base + step.x * g.x + step.y * g.y;
                         if (alt and k.second.is_down())
-                        {
-                            auto& s = scale[note % 12];
-                            s = not s;
-                            print_scale();
-                        }
+                            toggle_scale(note % 12);
                         byte vel = joy ? joy->get().y : 100;
                         if (scale[note % 12] or k.second.is_up()) mpu << event << note << vel << std::flush;
                     }
@@ -204,7 +206,8 @@ namespace jw
                 case key::num_sub:  if (ctrl) --base; else base -= 12; print_grid(); break;
 
                 case key::num_mul:
-                    scale.fill([] { for (auto&& i : scale) { if (not i) return true; } return false; }());
+                    if ((~scale).any()) scale.set();
+                    else scale.reset();
                     print_scale();
                     break;
 
@@ -220,28 +223,20 @@ namespace jw
                         enable_joystick(joy);
                         std::cout << "Joystick enabled." << std::endl;
                     }
-                }
+                    break;
 
-                static std::unordered_map<key, byte> scale_keys
-                {
-                    { key::f1,   0 },
-                    { key::f2,   1 },
-                    { key::f3,   2 },
-                    { key::f4,   3 },
-                    { key::f5,   4 },
-                    { key::f6,   5 },
-                    { key::f7,   6 },
-                    { key::f8,   7 },
-                    { key::f9,   8 },
-                    { key::f10,  9 },
-                    { key::f11, 10 },
-                    { key::f12, 11 }
-                };
-                if (scale_keys.count(k.first))
-                {
-                    auto& s = scale[scale_keys[k.first]];
-                    s = not s;
-                    print_scale();
+                case key::f1:   toggle_scale( 0); break;
+                case key::f2:   toggle_scale( 1); break;
+                case key::f3:   toggle_scale( 2); break;
+                case key::f4:   toggle_scale( 3); break;
+                case key::f5:   toggle_scale( 4); break;
+                case key::f6:   toggle_scale( 5); break;
+                case key::f7:   toggle_scale( 6); break;
+                case key::f8:   toggle_scale( 7); break;
+                case key::f9:   toggle_scale( 8); break;
+                case key::f10:  toggle_scale( 9); break;
+                case key::f11:  toggle_scale(10); break;
+                case key::f12:  toggle_scale(11); break;
                 }
             }
         } };
