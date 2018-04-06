@@ -92,7 +92,7 @@ namespace jw
     void print_scale()
     {
         constexpr std::array<const char*, 12> names { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-        std::cout << "Scale: "
+        std::cout << "Scale: ";
         for (int i = 0; i < 12; ++i)
             if (scale[i]) std::cout << names[i] << ' ';
         std::cout << std::endl;
@@ -156,7 +156,7 @@ namespace jw
                 case key::num_sub:  if (ctrl) --base; else base -= 12; print_grid(); break;
 
                 case key::num_mul:
-                    scale.fill([] { for (auto&& i : scale) { if (not i) return true; } return false; });
+                    scale.fill([] { for (auto&& i : scale) { if (not i) return true; } return false; }());
                     print_scale();
                     break;
                 }
