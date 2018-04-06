@@ -5,11 +5,13 @@
 #include <deque>
 #include <string_view>
 #include <unordered_map>
+#include <optional>
 #include <jw/io/key.h>
 #include <jw/vector.h>
 #include <jw/io/keyboard.h>
 #include <jw/io/ps2_interface.h>
 #include <jw/io/mpu401.h>
+#include <jw/io/gameport.h>
 
 namespace jw
 {
@@ -98,12 +100,41 @@ namespace jw
         std::cout << std::endl;
     }
 
+    void enable_joystick(std::optional<gameport<>>& joy)
+    {
+        gameport<>::config gameport_cfg { };
+        gameport_cfg.enable.x1 = false;
+        gameport_cfg.enable.y1 = false;
+
+        std::cout << "calibrate joystick, press fire when done.\n";
+        {
+            io::gameport<> joystick { gameport_cfg };
+            std::swap(gameport_cfg.calibration.x0_max, gameport_cfg.calibration.x0_min);
+            std::swap(gameport_cfg.calibration.y0_max, gameport_cfg.calibration.y0_min);
+            while (true)
+            {
+                auto raw = joystick.get_raw();
+                gameport_cfg.calibration.x0_min = std::min(gameport_cfg.calibration.x0_min, raw.x0);
+                gameport_cfg.calibration.y0_min = std::min(gameport_cfg.calibration.y0_min, raw.y0);
+                gameport_cfg.calibration.x0_max = std::max(gameport_cfg.calibration.x0_max, raw.x0);
+                gameport_cfg.calibration.y0_max = std::max(gameport_cfg.calibration.y0_max, raw.y0);
+
+                auto[a0, b0, a1, b1] = joystick.buttons();
+                if (a0 or b0 or a1 or b1) break;
+            }
+        }
+        gameport_cfg.strategy = gameport<>::poll_strategy::thread;
+
+        joy.emplace(gameport_cfg);
+    }
+
     void hexmidi()
     {
         scale.fill(true);
 
         mpu401_stream mpu { mpu401_config { } };
         keyboard keyb { std::make_shared<ps2_interface>() };
+        std::optional<gameport<>> joy;
 
         callback key_event { [&] (key_state_pair k)
         {
@@ -116,6 +147,7 @@ namespace jw
                 default:
                     try
                     {
+                        if (ctrl) break;
                         auto g = key_grid.at(k.first);
                         byte event = k.second == key_state::down ? 0x90 : 0x80;
                         byte note = base + step.x * g.x + step.y * g.y;
@@ -159,6 +191,19 @@ namespace jw
                     scale.fill([] { for (auto&& i : scale) { if (not i) return true; } return false; }());
                     print_scale();
                     break;
+
+                case key::j:
+                    if (not ctrl) break;
+                    if (joy)
+                    {
+                        joy.reset();
+                        std::cout << "Joystick disabled." << std::endl;
+                    }
+                    else
+                    {
+                        enable_joystick(joy);
+                        std::cout << "Joystick enabled." << std::endl;
+                    }
                 }
 
                 static std::unordered_map<key, byte> scale_keys
@@ -190,7 +235,7 @@ namespace jw
 
         while (running)
         {
-            thread::yield();
+            thread::yield_for(std::chrono::milliseconds { 1 });
         }
     }
 }

@@ -18,6 +18,7 @@ CXXFLAGS += -march=pentium3 -mfpmath=both
 #CXXFLAGS += -march=pentium
 CXXFLAGS += -std=gnu++17
 CXXFLAGS += -Wall -Wextra
+CXXFLAGS += -Wno-attributes
 # CXXFLAGS += -Wdisabled-optimization -Winline 
 # CXXFLAGS += -Wsuggest-attribute=pure 
 # CXXFLAGS += -Wsuggest-attribute=const
