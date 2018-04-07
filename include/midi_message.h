@@ -24,8 +24,7 @@ namespace jw
         struct system_realtime_message : public system_message { };
 
         // channel message types
-        struct note_off : public channel_message { byte key, velocity; };
-        struct note_on : public channel_message { byte key, velocity; };
+        struct note_event : public channel_message { bool on; byte key, velocity; };
         struct key_pressure : public channel_message { byte key, value; };
         struct channel_pressure : public channel_message { byte value; };
         struct control_change : public channel_message { byte controller, value; };
@@ -47,8 +46,7 @@ namespace jw
         struct reset : public system_realtime_message { };
 
         std::variant<
-            note_off,
-            note_on,
+            note_event,
             key_pressure,
             channel_pressure,
             control_change,
@@ -68,21 +66,20 @@ namespace jw
             reset> msg;
         typename clock::time_point time;
 
-        midi_message(std::istream& in) { in >> *this; }
-        template<typename T> midi_message(T&& m, auto t = clock::now()) : msg(std::forward<T>(m)), time(t) { }
+        midi(std::istream& in) { in >> *this; }
+        template<typename T> constexpr midi(T&& m, typename clock::time_point t = clock::time_point::min()) : msg(std::forward<T>(m)), time(t) { }
 
     protected:
         struct stream_writer
         {
             std::ostream& out;
 
-            void operator()(const note_off& msg)            { out.put(0x80 | (msg.channel & 0x0f)); out.put(msg.key);           out.put(msg.velocity); }
-            void operator()(const note_on& msg)             { out.put(0x90 | (msg.channel & 0x0f)); out.put(msg.key);           out.put(msg.velocity); }
-            void operator()(const key_pressure& msg)        { out.put(0xa0 | (msg.channel & 0x0f)); out.put(msg.key);           out.put(msg.value); }
-            void operator()(const control_change& msg)      { out.put(0xb0 | (msg.channel & 0x0f)); out.put(msg.controller);    out.put(msg.value); }
+            void operator()(const note_event& msg)          { out.put((msg.on ? 0x90 : 0x80) | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.velocity); }
+            void operator()(const key_pressure& msg)        { out.put(0xa0 | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.value); }
+            void operator()(const control_change& msg)      { out.put(0xb0 | (msg.channel & 0x0f)); out.put(msg.controller); out.put(msg.value); }
             void operator()(const program_change& msg)      { out.put(0xc0 | (msg.channel & 0x0f)); out.put(msg.value); }
             void operator()(const channel_pressure& msg)    { out.put(0xd0 | (msg.channel & 0x0f)); out.put(msg.value); }
-            void operator()(const pitch_change& msg)        { out.put(0xe0 | (msg.channel & 0x0f)); out.put(msg.value.lo);      out.put(msg.value.hi); }
+            void operator()(const pitch_change& msg)        { out.put(0xe0 | (msg.channel & 0x0f)); out.put(msg.value.lo); out.put(msg.value.hi); }
 
             void operator()(const sysex& msg)               { out.put(0xf0); out.write(reinterpret_cast<const char*>(msg.data.data()), msg.data.size()); out.put(0xf7); }
             void operator()(const mtc_quarter_frame& msg)   { out.put(0xf1); out.put(msg.data); }
@@ -123,13 +120,13 @@ namespace jw
                 byte ch = get();
                 switch (a & 0xf0)
                 {
-                case 0x80: out.msg = note_off { { ch }, get(), get() }; break;
+                case 0x80: out.msg = note_event { { ch }, false, get(), get() }; break;
                 case 0x90:
                 {
                     auto key = get();
                     auto vel = get();
-                    if (vel == 0) out.msg = note_off { { ch }, key, vel };
-                    else out.msg = note_on { { ch }, key, vel };
+                    if (vel == 0) out.msg = note_event { { ch }, false, key, vel };
+                    else out.msg = note_event { { ch }, true, key, vel };
                     break;
                 }
                 case 0xa0: out.msg = key_pressure { { ch }, get(), get() }; break;
