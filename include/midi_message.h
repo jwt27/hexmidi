@@ -97,8 +97,8 @@ namespace jw
 
             void operator()(const long_control_change& msg)
             {
-                out << midi { control_change { { msg.channel }, msg.controller, static_cast<byte>(msg.value.lo) } };
-                out << midi { control_change { { msg.channel }, static_cast<byte>(msg.controller + 32), static_cast<byte>(msg.value.hi) } };
+                out << midi { control_change { { msg.channel }, msg.controller, static_cast<byte>(msg.value.hi) } };
+                out << midi { control_change { { msg.channel }, static_cast<byte>(msg.controller + 32), static_cast<byte>(msg.value.lo) } };
             }
         };
 
