@@ -29,6 +29,7 @@ namespace jw
         struct key_pressure : public channel_message { byte key, value; };
         struct channel_pressure : public channel_message { byte value; };
         struct control_change : public channel_message { byte controller, value; };
+        struct long_control_change : public channel_message { byte controller; split_uint14_t value; };
         struct program_change : public channel_message { byte value; };
         struct pitch_change : public channel_message { split_uint14_t value; };
 
@@ -51,6 +52,7 @@ namespace jw
             key_pressure,
             channel_pressure,
             control_change,
+            long_control_change,
             program_change,
             pitch_change,
             sysex,
@@ -94,6 +96,13 @@ namespace jw
             void operator()(const clock_stop&)      { out.put(0xfc); }
             void operator()(const active_sense&)    { out.put(0xfe); }
             void operator()(const reset&)           { out.put(0xff); }
+
+
+            void operator()(const long_control_change& msg)
+            {
+                out << midi { control_change { { msg.channel }, msg.controller, static_cast<byte>(msg.value.lo) } };
+                out << midi { control_change { { msg.channel }, static_cast<byte>(msg.controller + 32), static_cast<byte>(msg.value.hi) } };
+            }
         };
 
     public:
