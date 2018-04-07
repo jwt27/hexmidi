@@ -117,7 +117,7 @@ namespace jw
             out.time = clock::now();
             if ((a & 0xf0) != 0xf0)   // channel message
             {
-                byte ch = get();
+                byte ch = a & 0x0f;
                 switch (a & 0xf0)
                 {
                 case 0x80: out.msg = note_event { { ch }, false, get(), get() }; break;
