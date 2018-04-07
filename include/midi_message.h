@@ -3,7 +3,7 @@
 
 #pragma once
 #include <variant>
-#include <deque>
+#include <vector>
 #include <iostream>
 #include <jw/common.h>
 #include <jw/split_stdint.h>
@@ -33,8 +33,8 @@ namespace jw
         struct pitch_change : public channel_message { split_uint14_t value; };
 
         // system message types
-        struct sysex : public system_common_message { std::deque<byte> data; };
-        struct mtc_quarter_frame : public system_common_message { byte value; };    // TODO
+        struct sysex : public system_common_message { std::vector<byte> data; };
+        struct mtc_quarter_frame : public system_common_message { byte data; };    // TODO
         struct song_position : public system_common_message { split_uint14_t value; };
         struct song_select : public system_common_message { byte value; };
         struct tune_request : public system_common_message { };
@@ -44,7 +44,6 @@ namespace jw
         struct clock_stop : public system_realtime_message { };
         struct active_sense : public system_realtime_message { };
         struct reset : public system_realtime_message { };
-
 
         std::variant<
             note_off,
@@ -74,8 +73,27 @@ namespace jw
         struct stream_writer
         {
             std::ostream& out;
-            void operator()(const channel_message&) { }
-            void operator()(const system_message&) { }
+
+            void operator()(const note_off& msg)            { out.put(0x80 | (msg.channel & 0x0f)); out.put(msg.note);          out.put(msg.velocity); }
+            void operator()(const note_on& msg)             { out.put(0x90 | (msg.channel & 0x0f)); out.put(msg.note);          out.put(msg.velocity); }
+            void operator()(const key_pressure& msg)        { out.put(0xa0 | (msg.channel & 0x0f)); out.put(msg.note);          out.put(msg.value); }
+            void operator()(const control_change& msg)      { out.put(0xb0 | (msg.channel & 0x0f)); out.put(msg.controller);    out.put(msg.value); }
+            void operator()(const program_change& msg)      { out.put(0xc0 | (msg.channel & 0x0f)); out.put(msg.value); }
+            void operator()(const channel_pressure& msg)    { out.put(0xd0 | (msg.channel & 0x0f)); out.put(msg.value); }
+            void operator()(const pitch_change& msg)        { out.put(0xe0 | (msg.channel & 0x0f)); out.put(msg.value.lo);      out.put(msg.value.hi); }
+
+            void operator()(const sysex& msg)               { out.put(0xf0); out.write(reinterpret_cast<const char*>(msg.data.data()), msg.data.size()); out.put(0xf7); }
+            void operator()(const mtc_quarter_frame& msg)   { out.put(0xf1); out.put(msg.data); }
+            void operator()(const song_position& msg)       { out.put(0xf2); out.put(msg.value.lo); out.put(msg.value.hi); }
+            void operator()(const song_select& msg)         { out.put(0xf3); out.put(msg.value); }
+
+            void operator()(const tune_request&)    { out.put(0xf6); }
+            void operator()(const clock_tick&)      { out.put(0xf8); }
+            void operator()(const clock_start&)     { out.put(0xfa); }
+            void operator()(const clock_continue&)  { out.put(0xfb); }
+            void operator()(const clock_stop&)      { out.put(0xfc); }
+            void operator()(const active_sense&)    { out.put(0xfe); }
+            void operator()(const reset&)           { out.put(0xff); }
         };
 
     public:
@@ -89,7 +107,7 @@ namespace jw
         {
             byte a;
             auto get = [&in] { return static_cast<byte>(in.get()); };
-            thread::yield_while([&] { a = get(); return (a & 0x80) == 0; });
+            do { a = get(); } while ((a & 0x80) == 0);
             out.time = clock::now();
             if ((a & 0xf0) != 0xf0)   // channel message
             {
@@ -113,7 +131,7 @@ namespace jw
                 {
                     out.msg = sysex { };
                     auto& data = std::get<sysex>(out.msg).data;
-                    std::deque<char> extra { };
+                    std::vector<char> extra { };
                     while (true)
                     {
                         a = get();
