@@ -24,9 +24,9 @@ namespace jw
         struct system_realtime_message : public system_message { };
 
         // channel message types
-        struct note_off : public channel_message { byte note, velocity; };
-        struct note_on : public channel_message { byte note, velocity; };
-        struct key_pressure : public channel_message { byte note, value; };
+        struct note_off : public channel_message { byte key, velocity; };
+        struct note_on : public channel_message { byte key, velocity; };
+        struct key_pressure : public channel_message { byte key, value; };
         struct channel_pressure : public channel_message { byte value; };
         struct control_change : public channel_message { byte controller, value; };
         struct program_change : public channel_message { byte value; };
@@ -74,9 +74,9 @@ namespace jw
         {
             std::ostream& out;
 
-            void operator()(const note_off& msg)            { out.put(0x80 | (msg.channel & 0x0f)); out.put(msg.note);          out.put(msg.velocity); }
-            void operator()(const note_on& msg)             { out.put(0x90 | (msg.channel & 0x0f)); out.put(msg.note);          out.put(msg.velocity); }
-            void operator()(const key_pressure& msg)        { out.put(0xa0 | (msg.channel & 0x0f)); out.put(msg.note);          out.put(msg.value); }
+            void operator()(const note_off& msg)            { out.put(0x80 | (msg.channel & 0x0f)); out.put(msg.key);           out.put(msg.velocity); }
+            void operator()(const note_on& msg)             { out.put(0x90 | (msg.channel & 0x0f)); out.put(msg.key);           out.put(msg.velocity); }
+            void operator()(const key_pressure& msg)        { out.put(0xa0 | (msg.channel & 0x0f)); out.put(msg.key);           out.put(msg.value); }
             void operator()(const control_change& msg)      { out.put(0xb0 | (msg.channel & 0x0f)); out.put(msg.controller);    out.put(msg.value); }
             void operator()(const program_change& msg)      { out.put(0xc0 | (msg.channel & 0x0f)); out.put(msg.value); }
             void operator()(const channel_pressure& msg)    { out.put(0xd0 | (msg.channel & 0x0f)); out.put(msg.value); }
@@ -115,7 +115,14 @@ namespace jw
                 switch (a & 0xf0)
                 {
                 case 0x80: out.msg = note_off { { ch }, get(), get() }; break;
-                case 0x90: out.msg = note_on { { ch }, get(), get() }; break;
+                case 0x90:
+                {
+                    auto key = get();
+                    auto vel = get();
+                    if (vel == 0) out.msg = note_off { { ch }, key, vel };
+                    else out.msg = note_on { { ch }, key, vel };
+                    break;
+                }
                 case 0xa0: out.msg = key_pressure { { ch }, get(), get() }; break;
                 case 0xb0: out.msg = control_change { { ch }, get(), get() }; break;
                 case 0xc0: out.msg = program_change { { ch }, get() }; break;
