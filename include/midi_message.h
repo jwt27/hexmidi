@@ -13,7 +13,7 @@ namespace jw
 {
     using split_uint14_t = split_int<unsigned, 14>;
 
-    struct midi_message
+    struct midi
     {
         using clock = jw::chrono::tsc;
 
@@ -97,13 +97,13 @@ namespace jw
         };
 
     public:
-        friend std::ostream& operator<<(std::ostream& out, const midi_message& in)
+        friend std::ostream& operator<<(std::ostream& out, const midi& in)
         {
             std::visit(stream_writer { out }, in.msg);
             return out;
         }
 
-        friend std::istream& operator>>(std::istream& in, midi_message& out)
+        friend std::istream& operator>>(std::istream& in, midi& out)
         {
             byte a;
             auto get = [&in] { return static_cast<byte>(in.get()); };
