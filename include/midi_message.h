@@ -28,9 +28,11 @@ namespace jw
         struct key_pressure : public channel_message { byte key, value; };
         struct channel_pressure : public channel_message { byte value; };
         struct control_change : public channel_message { byte controller, value; };
-        struct long_control_change : public channel_message { byte controller; split_uint14_t value; };
+        struct long_control_change : public channel_message { byte controller; split_uint14_t value; }; // never received
         struct program_change : public channel_message { byte value; };
         struct pitch_change : public channel_message { split_uint14_t value; };
+        struct rpn_change : public channel_message { split_uint14_t parameter, value; }; // never received
+        struct nrpn_change : public channel_message { split_uint14_t parameter, value; }; // never received
 
         // system message types
         struct sysex : public system_common_message { std::vector<byte> data; };
@@ -53,6 +55,8 @@ namespace jw
             long_control_change,
             program_change,
             pitch_change,
+            rpn_change,
+            nrpn_change,
             sysex,
             mtc_quarter_frame,
             song_position,
@@ -94,11 +98,24 @@ namespace jw
             void operator()(const active_sense&)    { out.put(0xfe); }
             void operator()(const reset&)           { out.put(0xff); }
 
-
             void operator()(const long_control_change& msg)
             {
                 out << midi { control_change { { msg.channel }, msg.controller, static_cast<byte>(msg.value.hi) } };
                 out << midi { control_change { { msg.channel }, static_cast<byte>(msg.controller + 32), static_cast<byte>(msg.value.lo) } };
+            }
+
+            void operator()(const rpn_change& msg)
+            {
+                out << midi { control_change { { msg.channel }, 0x65, static_cast<byte>(msg.parameter.hi) } };
+                out << midi { control_change { { msg.channel }, 0x64, static_cast<byte>(msg.parameter.lo) } };
+                out << midi { long_control_change { { msg.channel }, 0x06, msg.value } };
+            }
+
+            void operator()(const nrpn_change& msg)
+            {
+                out << midi { control_change { { msg.channel }, 0x63, static_cast<byte>(msg.parameter.hi) } };
+                out << midi { control_change { { msg.channel }, 0x62, static_cast<byte>(msg.parameter.lo) } };
+                out << midi { long_control_change { { msg.channel }, 0x06, msg.value } };
             }
         };
 
