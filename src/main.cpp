@@ -14,6 +14,7 @@
 #include <jw/io/mpu401.h>
 #include <jw/io/gameport.h>
 #include <jw/split_stdint.h>
+#include <jw/thread/task.h>
 #include "midi_message.h"
 
 namespace jw
@@ -73,7 +74,7 @@ namespace jw
         { key::slash,       {   9, 0 } }
     };
 
-    std::bitset<12> scale { 0b11111111111 };
+    std::bitset<12> scale { 0b111111111111 };
     bool running { true };
     byte base { 45 };
     vector2i step { 2, 3 };
@@ -158,6 +159,16 @@ namespace jw
         mpu401_stream mpu { mpu401_config { } };
         keyboard keyb { std::make_shared<ps2_interface>() };
         std::optional<gameport<>> joy { };
+
+        thread::task active_sensing { [&mpu]
+        {
+            while (running)
+            {
+                mpu << midi { midi::active_sense { } } << std::flush;
+                thread::yield_for(275ms);
+            }
+        } };
+        active_sensing->start();
 
         callback key_event { [&] (key_state_pair k)
         {
@@ -269,6 +280,8 @@ namespace jw
             }
             thread::yield_for(std::chrono::milliseconds { 2 });
         }
+
+        active_sensing->await();
     }
 }
 
