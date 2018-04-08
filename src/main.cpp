@@ -14,6 +14,7 @@
 #include <jw/io/mpu401.h>
 #include <jw/io/gameport.h>
 #include <jw/split_stdint.h>
+#include "midi_message.h"
 
 namespace jw
 {
@@ -73,6 +74,10 @@ namespace jw
     };
 
     std::bitset<12> scale { 0b11111111111 };
+    bool running { true };
+    byte base { 45 };
+    vector2i step { 2, 3 };
+    byte channel { 0 };
 
     struct midi_note
     {
@@ -86,10 +91,6 @@ namespace jw
 
         constexpr operator byte() const noexcept { return value; }
     };
-
-    bool running { true };
-    byte base { 45 };
-    vector2i step { 2, 3 };
 
     void print_grid()
     {
@@ -171,22 +172,19 @@ namespace jw
                     {
                         if (ctrl) break;
                         auto g = key_grid.at(k.first);
-                        byte event = k.second == key_state::down ? 0x90 : 0x80;
                         byte note = base + step.x * g.x + step.y * g.y;
                         if (alt and k.second.is_down())
                             toggle_scale(note % 12);
                         byte vel = joy ? joy->get().y : 100;
-                        if (scale[note % 12] or k.second.is_up()) mpu << event << note << vel << std::flush;
+                        if (scale[note % 12] or k.second.is_up()) mpu << midi { midi::note_event { { channel }, k.second.is_down(), note, vel } } << std::flush;
                     }
                     catch (const std::out_of_range&) { }
                     break;
 
                 case key::space:
                 {
-                    byte event = 0xb0;
-                    byte cc = 64;
                     byte value = k.second == key_state::down ? 0x7f : 0x00;
-                    mpu << event << cc << value << std::flush;
+                    mpu << midi { midi::control_change { { channel }, 64, value } } << std::flush;
                     break;
                 }
                 }
@@ -254,20 +252,11 @@ namespace jw
                 joy_value = joy->get();
                 if (joy->cfg.enable.x0 and joy_value.x != last_joy_value.x)
                 {
-                    byte event = 0xb0;
-                    split_uint14_t value = joy_value.x;
-                    byte cc = 1;    // modulation
-                    byte v = value.hi;
-                    mpu << event << cc << v;
-                    cc = 1 + 32;
-                    v = value.lo;
-                    mpu << event << cc << v << std::flush;
+                    mpu << midi { midi::long_control_change { { channel }, 1, joy_value.x } } << std::flush;
                 }
                 if (joy->cfg.enable.y0 and joy_value.y != last_joy_value.y)
                 {
-                    byte event = 0xd0;  // aftertouch
-                    byte value = joy_value.y;
-                    mpu << event << value << std::flush;
+                    mpu << midi { midi::channel_pressure { { channel }, joy_value.y } } << std::flush;
                 }
                 if (joy->cfg.enable.x1 and joy_value.z != last_joy_value.z)
                 {
