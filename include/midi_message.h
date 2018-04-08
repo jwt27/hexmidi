@@ -5,6 +5,7 @@
 #include <variant>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 #include <jw/common.h>
 #include <jw/split_stdint.h>
 #include <jw/thread/thread.h>
@@ -74,21 +75,32 @@ namespace jw
         template<typename T> constexpr midi(T&& m, typename clock::time_point t = clock::time_point::min()) : msg(std::forward<T>(m)), time(t) { }
 
     protected:
+        inline static std::unordered_map<std::istream*, byte> last_status_rx { };
+        inline static std::unordered_map<std::ostream*, byte> last_status_tx { };
+
         struct stream_writer
         {
             std::ostream& out;
 
-            void operator()(const note_event& msg)          { out.put((msg.on ? 0x90 : 0x80) | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.velocity); }
-            void operator()(const key_pressure& msg)        { out.put(0xa0 | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.value); }
-            void operator()(const control_change& msg)      { out.put(0xb0 | (msg.channel & 0x0f)); out.put(msg.controller); out.put(msg.value); }
-            void operator()(const program_change& msg)      { out.put(0xc0 | (msg.channel & 0x0f)); out.put(msg.value); }
-            void operator()(const channel_pressure& msg)    { out.put(0xd0 | (msg.channel & 0x0f)); out.put(msg.value); }
-            void operator()(const pitch_change& msg)        { out.put(0xe0 | (msg.channel & 0x0f)); out.put(msg.value.lo); out.put(msg.value.hi); }
+            void put_status(byte a)
+            {
+                if (last_status_tx[&out] != a) out.put(a);
+                last_status_tx[&out] = a;
+            }
 
-            void operator()(const sysex& msg)               { out.put(0xf0); out.write(reinterpret_cast<const char*>(msg.data.data()), msg.data.size()); out.put(0xf7); }
-            void operator()(const mtc_quarter_frame& msg)   { out.put(0xf1); out.put(msg.data); }
-            void operator()(const song_position& msg)       { out.put(0xf2); out.put(msg.value.lo); out.put(msg.value.hi); }
-            void operator()(const song_select& msg)         { out.put(0xf3); out.put(msg.value); }
+            void clear_status() { last_status_tx[&out] = 0; }
+
+            void operator()(const note_event& msg)          { put_status((msg.on ? 0x90 : 0x80) | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.velocity); }
+            void operator()(const key_pressure& msg)        { put_status(0xa0 | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.value); }
+            void operator()(const control_change& msg)      { put_status(0xb0 | (msg.channel & 0x0f)); out.put(msg.controller); out.put(msg.value); }
+            void operator()(const program_change& msg)      { put_status(0xc0 | (msg.channel & 0x0f)); out.put(msg.value); }
+            void operator()(const channel_pressure& msg)    { put_status(0xd0 | (msg.channel & 0x0f)); out.put(msg.value); }
+            void operator()(const pitch_change& msg)        { put_status(0xe0 | (msg.channel & 0x0f)); out.put(msg.value.lo); out.put(msg.value.hi); }
+
+            void operator()(const sysex& msg)               { clear_status(); out.put(0xf0); out.write(reinterpret_cast<const char*>(msg.data.data()), msg.data.size()); out.put(0xf7); }
+            void operator()(const mtc_quarter_frame& msg)   { clear_status(); out.put(0xf1); out.put(msg.data); }
+            void operator()(const song_position& msg)       { clear_status(); out.put(0xf2); out.put(msg.value.lo); out.put(msg.value.hi); }
+            void operator()(const song_select& msg)         { clear_status(); out.put(0xf3); out.put(msg.value); }
 
             void operator()(const tune_request&)    { out.put(0xf6); }
             void operator()(const clock_tick&)      { out.put(0xf8); }
@@ -128,12 +140,13 @@ namespace jw
 
         friend std::istream& operator>>(std::istream& in, midi& out)
         {
-            byte a;
+            byte a { last_status_rx[&in] };
             auto get = [&in] { return static_cast<byte>(in.get()); };
-            do { a = get(); } while ((a & 0x80) == 0);
+            if ((in.peek() & 0x80) == 0 and a == 0) do { a = get(); } while ((a & 0x80) == 0);
             out.time = clock::now();
             if ((a & 0xf0) != 0xf0)   // channel message
             {
+                last_status_rx[&in] = a;
                 byte ch = a & 0x0f;
                 switch (a & 0xf0)
                 {
@@ -155,6 +168,7 @@ namespace jw
             }
             else                    // system message
             {
+                if (a < 0xf8) last_status_rx[&in] = 0;
                 switch (a)
                 {
                 case 0xf0:
