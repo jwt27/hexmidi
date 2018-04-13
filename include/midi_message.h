@@ -90,7 +90,21 @@ namespace jw
 
             void clear_status() { last_status_tx[&out] = 0; }
 
-            void operator()(const note_event& msg)          { put_status((msg.on ? 0x90 : 0x80) | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.velocity); }
+            void operator()(const note_event& msg)
+            {
+                if (not msg.on and last_status_tx[&out] == (0x90 | (msg.channel & 0x0f)))
+                {
+                    put_status(0x90 | (msg.channel & 0x0f));
+                    out.put(msg.key);
+                    out.put(0x00);
+                }
+                else
+                {
+                    put_status((msg.on ? 0x90 : 0x80) | (msg.channel & 0x0f));
+                    out.put(msg.key);
+                    out.put(msg.velocity);
+                }
+            }
             void operator()(const key_pressure& msg)        { put_status(0xa0 | (msg.channel & 0x0f)); out.put(msg.key); out.put(msg.value); }
             void operator()(const control_change& msg)      { put_status(0xb0 | (msg.channel & 0x0f)); out.put(msg.controller); out.put(msg.value); }
             void operator()(const program_change& msg)      { put_status(0xc0 | (msg.channel & 0x0f)); out.put(msg.value); }
