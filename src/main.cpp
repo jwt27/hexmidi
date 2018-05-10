@@ -117,8 +117,8 @@ namespace jw
     {
         gameport::config gameport_cfg { };
         gameport_cfg.strategy = gameport::poll_strategy::busy_loop;
-        gameport_cfg.enable.x1 = false;
-        gameport_cfg.enable.y1 = false;
+        gameport_cfg.enable.z = false;
+        gameport_cfg.enable.w = false;
         gameport_cfg.output_range.min.x = -8192;
         gameport_cfg.output_range.min.x = 8191;
         gameport_cfg.output_range.min.y = 0;
@@ -127,15 +127,15 @@ namespace jw
         std::cout << "calibrate joystick, press fire when done.\n";
         {
             io::gameport joystick { gameport_cfg };
-            std::swap(gameport_cfg.calibration.x0_max, gameport_cfg.calibration.x0_min);
-            std::swap(gameport_cfg.calibration.y0_max, gameport_cfg.calibration.y0_min);
+            std::swap(gameport_cfg.calibration.max, gameport_cfg.calibration.min);
             while (true)
             {
                 auto raw = joystick.get_raw();
-                gameport_cfg.calibration.x0_min = std::min(gameport_cfg.calibration.x0_min, raw.x0);
-                gameport_cfg.calibration.y0_min = std::min(gameport_cfg.calibration.y0_min, raw.y0);
-                gameport_cfg.calibration.x0_max = std::max(gameport_cfg.calibration.x0_max, raw.x0);
-                gameport_cfg.calibration.y0_max = std::max(gameport_cfg.calibration.y0_max, raw.y0);
+                for (auto i = 0; i < 4; ++i)
+                {
+                    gameport_cfg.calibration.min[i] = std::min(gameport_cfg.calibration.min[i], raw[i]);
+                    gameport_cfg.calibration.max[i] = std::max(gameport_cfg.calibration.max[i], raw[i]);
+                }
 
                 auto[a0, b0, a1, b1] = joystick.buttons();
                 if (a0 or b0 or a1 or b1) break;
@@ -252,7 +252,7 @@ namespace jw
 
         keyb.key_changed += key_event;
         keyb.auto_update(true);
-        vector4f joy_value { }, last_joy_value;
+        vector4i joy_value { }, last_joy_value;
         std::cout << "ready.\n" << std::endl;
 
         while (running)
@@ -261,19 +261,20 @@ namespace jw
             {
                 last_joy_value = joy_value;
                 joy_value = joy->get();
-                if (joy->cfg.enable.x0 and joy_value.x != last_joy_value.x)
+
+                if (joy->cfg.enable.x and joy_value.x != last_joy_value.x)
                 {
                     mpu << midi { midi::long_control_change { { channel }, 1, joy_value.x } } << std::flush;
                 }
-                if (joy->cfg.enable.y0 and joy_value.y != last_joy_value.y)
+                if (joy->cfg.enable.y and joy_value.y != last_joy_value.y)
                 {
                     mpu << midi { midi::channel_pressure { { channel }, joy_value.y } } << std::flush;
                 }
-                if (joy->cfg.enable.x1 and joy_value.z != last_joy_value.z)
+                if (joy->cfg.enable.z and joy_value.z != last_joy_value.z)
                 {
 
                 }
-                if (joy->cfg.enable.y1 and joy_value.w != last_joy_value.w)
+                if (joy->cfg.enable.w and joy_value.w != last_joy_value.w)
                 {
 
                 }
