@@ -125,11 +125,11 @@ namespace jw
         gameport_cfg.output_range.min.y = 0;
         gameport_cfg.output_range.min.y = 127;
 
-        std::cout << "calibrate joystick, press fire when done.\n";
+        std::cout << "calibrate joystick, press fire when done." << std::endl;
         {
             io::gameport joystick { gameport_cfg };
             std::swap(gameport_cfg.calibration.max, gameport_cfg.calibration.min);
-            while (true)
+            do
             {
                 auto raw = joystick.get_raw();
                 for (auto i = 0; i < 4; ++i)
@@ -137,10 +137,7 @@ namespace jw
                     gameport_cfg.calibration.min[i] = std::min(gameport_cfg.calibration.min[i], raw[i]);
                     gameport_cfg.calibration.max[i] = std::max(gameport_cfg.calibration.max[i], raw[i]);
                 }
-
-                auto b = joystick.buttons();
-                if (b.any()) break;
-            }
+            } while (joystick.buttons().none());
         }
         gameport_cfg.strategy = gameport::poll_strategy::thread;
 
