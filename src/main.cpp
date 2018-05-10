@@ -113,10 +113,10 @@ namespace jw
         print_scale();
     }
 
-    void enable_joystick(std::optional<gameport<>>& joy)
+    void enable_joystick(std::optional<gameport>& joy)
     {
-        gameport<>::config gameport_cfg { };
-        gameport_cfg.strategy = gameport<>::poll_strategy::busy_loop;
+        gameport::config gameport_cfg { };
+        gameport_cfg.strategy = gameport::poll_strategy::busy_loop;
         gameport_cfg.enable.x1 = false;
         gameport_cfg.enable.y1 = false;
         gameport_cfg.output_range.min.x = -8192;
@@ -126,7 +126,7 @@ namespace jw
 
         std::cout << "calibrate joystick, press fire when done.\n";
         {
-            io::gameport<> joystick { gameport_cfg };
+            io::gameport joystick { gameport_cfg };
             std::swap(gameport_cfg.calibration.x0_max, gameport_cfg.calibration.x0_min);
             std::swap(gameport_cfg.calibration.y0_max, gameport_cfg.calibration.y0_min);
             while (true)
@@ -141,7 +141,7 @@ namespace jw
                 if (a0 or b0 or a1 or b1) break;
             }
         }
-        gameport_cfg.strategy = gameport<>::poll_strategy::thread;
+        gameport_cfg.strategy = gameport::poll_strategy::thread;
 
         joy.emplace(gameport_cfg);
     }
@@ -158,7 +158,7 @@ namespace jw
 
         mpu401_stream mpu { mpu401_config { } };
         keyboard keyb { std::make_shared<ps2_interface>() };
-        std::optional<gameport<>> joy { };
+        std::optional<gameport> joy { };
 
         thread::task active_sensing { [&mpu]
         {
