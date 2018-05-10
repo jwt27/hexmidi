@@ -15,11 +15,12 @@
 #include <jw/io/gameport.h>
 #include <jw/split_stdint.h>
 #include <jw/thread/task.h>
-#include "midi_message.h"
+#include <jw/audio/midi.h>
 
 namespace jw
 {
     using namespace io;
+    using namespace audio;
     using split_int14_t = split_int<signed, 14>;
     using split_uint14_t = split_int<unsigned, 14>;
 
@@ -137,8 +138,8 @@ namespace jw
                     gameport_cfg.calibration.max[i] = std::max(gameport_cfg.calibration.max[i], raw[i]);
                 }
 
-                auto[a0, b0, a1, b1] = joystick.buttons();
-                if (a0 or b0 or a1 or b1) break;
+                auto b = joystick.buttons();
+                if (b.any()) break;
             }
         }
         gameport_cfg.strategy = gameport::poll_strategy::thread;
