@@ -14,8 +14,8 @@ CXXFLAGS += -MD -MP
 #CXXFLAGS += -O3 -flto -flto-odr-type-merging -ffast-math
 CXXFLAGS += -Og -ggdb -flto -flto-odr-type-merging -ffast-math
 CXXFLAGS += -floop-nest-optimize -fgraphite-identity
-CXXFLAGS += -march=pentium3 -mfpmath=both
-#CXXFLAGS += -march=pentium
+#CXXFLAGS += -march=pentium3 -mfpmath=both
+CXXFLAGS += -march=pentium
 CXXFLAGS += -std=gnu++17
 CXXFLAGS += -Wall -Wextra
 CXXFLAGS += -Wno-attributes
