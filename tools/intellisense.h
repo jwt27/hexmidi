@@ -36,6 +36,18 @@
 #undef __cpp_rvalue_references
 #undef __cpp_nsdmi
 #undef __cpp_rtti
+#undef __cpp_noexcept_function_type
+#undef __cpp_variadic_using
+#undef __cpp_capture_star_this
+#undef __cpp_if_constexpr
+#undef __cpp_aligned_new
+#undef __cpp_hex_float
+#undef __cpp_nested_namespace_definitions
+#undef __cpp_structured_bindings
+#undef __cpp_range_based_for
+#undef __cpp_nontype_template_args
+#undef __cpp_inline_variables
+#undef __cpp_namespace_attributes
 #undef __EXCEPTIONS
 #undef __CHAR32_TYPE__
 

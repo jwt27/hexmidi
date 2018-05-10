@@ -15,7 +15,7 @@
       ],
       "intelliSenseMode": "linux-gcc-x86",
       "forcedInclude": [ "${workspaceRoot}/tools/intellisense.h" ],
-      "compilerSwitches": "-std=c++14"
+      "compilerSwitches": "-std=c++17"
     }
   ]
 }
