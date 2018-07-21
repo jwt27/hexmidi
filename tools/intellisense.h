@@ -48,14 +48,18 @@
 #undef __cpp_nontype_template_args
 #undef __cpp_inline_variables
 #undef __cpp_namespace_attributes
+#undef __cpp_fold_expressions
+#undef __cpp_constexpr
+#undef __cpp_template_template_args
+#undef __cpp_threadsafe_static_init
+#undef __cpp_aggregate_bases
 #undef __EXCEPTIONS
 #undef __CHAR32_TYPE__
 
 #include "gcc_defines.h"
 
 #undef __SIZE_TYPE__
-#define __SIZE_TYPE__ size_t
-using size_t = size_t; // yes...
+#define __SIZE_TYPE__ unsigned int
 
 #define __float128 long double
 #define __null 0
