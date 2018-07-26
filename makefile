@@ -11,12 +11,12 @@ FDD := $(or $(FDD), /a)
 CXXFLAGS += -pipe
 CXXFLAGS += -masm=intel
 CXXFLAGS += -MD -MP
-#CXXFLAGS += -O3 -flto -flto-odr-type-merging -ffast-math
-CXXFLAGS += -Og -ggdb -flto -flto-odr-type-merging -ffast-math
+CXXFLAGS += -O3 -flto -flto-odr-type-merging -ffast-math
+#CXXFLAGS += -Og -ggdb -flto -flto-odr-type-merging -ffast-math
 CXXFLAGS += -floop-nest-optimize -fgraphite-identity
-#CXXFLAGS += -march=pentium3 -mfpmath=both
-CXXFLAGS += -march=pentium
-CXXFLAGS += -std=gnu++17
+CXXFLAGS += -march=pentium3 -mfpmath=both
+#CXXFLAGS += -march=pentium
+CXXFLAGS += -std=gnu++17 -fconcepts
 CXXFLAGS += -Wall -Wextra
 CXXFLAGS += -Wno-attributes
 # CXXFLAGS += -Wdisabled-optimization -Winline 

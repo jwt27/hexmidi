@@ -53,6 +53,7 @@
 #undef __cpp_template_template_args
 #undef __cpp_threadsafe_static_init
 #undef __cpp_aggregate_bases
+#undef __cpp_deduction_guides
 #undef __EXCEPTIONS
 #undef __CHAR32_TYPE__
 
