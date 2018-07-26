@@ -258,7 +258,7 @@ namespace jw
             if (joy)
             {
                 last_joy_value = joy_value;
-                joy_value = joy->get();
+                joy_value = round(joy->get());
 
                 if (joy->cfg.enable.x and joy_value.x != last_joy_value.x)
                 {
@@ -266,7 +266,7 @@ namespace jw
                 }
                 if (joy->cfg.enable.y and joy_value.y != last_joy_value.y)
                 {
-                    mpu << midi { midi::channel_pressure { { channel }, joy_value.y } } << std::flush;
+                    mpu << midi { midi::channel_pressure { { channel }, static_cast<byte>(joy_value.y) } } << std::flush;
                 }
                 if (joy->cfg.enable.z and joy_value.z != last_joy_value.z)
                 {
