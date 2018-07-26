@@ -87,7 +87,7 @@ namespace jw
 
         friend std::ostream& operator<<(std::ostream& out, midi_note n)
         {
-            constexpr std::array<const char*, 12> names { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+            constexpr std::array<std::string_view, 12> names { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
             return out << names[n.value % 12] << n.value / 12;
         }
 
@@ -101,7 +101,7 @@ namespace jw
 
     void print_scale()
     {
-        constexpr std::array<const char*, 12> names { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+        constexpr std::array<std::string_view, 12> names { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
         std::cout << "Scale: ";
         for (int i = 0; i < 12; ++i)
             if (scale[i]) std::cout << names[i] << ' ';
