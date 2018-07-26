@@ -52,6 +52,7 @@ OBJDIR := obj
 SRC := $(wildcard $(SRCDIR)/*.cpp)
 OBJ := $(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 DEP := $(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.d)
+PREPROCESSED := $(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.ii)
 
 ifneq ($(findstring vs,$(MAKECMDGOALS)),)
     PIPECMD := 2>&1 | gcc2vs
@@ -79,6 +80,9 @@ $(LIB_OUTPUT): FORCE
 	cp -u lib/jwdpmi_config.h lib/libjwdpmi/jwdpmi_config.h
 	$(MAKE) -C lib/libjwdpmi/
 
+preprocessed: $(PREPROCESSED)
+	$(MAKE) preprocessed -C lib/libjwdpmi/
+
 $(OUTDIR): 
 	mkdir -p $(OUTDIR)
 
@@ -102,6 +106,9 @@ $(OUTDIR)/$(OUTPUT_DUMP): $(OUTDIR)/$(OUTPUT) | $(OUTDIR)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -o $@ -MF $(@:.o=.d) $(INCLUDE) -c $< $(PIPECMD)
+
+$(OBJDIR)/%.ii: $(SRCDIR)/%.cpp | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -E -o $@ $(INCLUDE) -c $<
 
 ifneq ($(MAKECMDGOALS),clean)
   -include $(DEP)
